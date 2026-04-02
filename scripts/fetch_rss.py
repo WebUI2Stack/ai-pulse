@@ -11,46 +11,43 @@ SOURCES = [
     {"url": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml", "name": "The Verge"},
     {"url": "https://techcrunch.com/category/artificial-intelligence/feed/", "name": "TechCrunch"},
     {"url": "https://venturebeat.com/category/ai/feed/", "name": "VentureBeat"},
-    {"url": "https://www.wired.com/feed/tag/artificial-intelligence/rss", "name": "Wired"},
     {"url": "https://feeds.arstechnica.com/arstechnica/technology-lab", "name": "Ars Technica"},
     {"url": "https://www.technologyreview.com/feed/", "name": "MIT Tech Review"},
     {"url": "https://huggingface.co/blog/feed.xml", "name": "Hugging Face"},
     {"url": "https://blogs.microsoft.com/ai/feed/", "name": "Microsoft AI"},
     {"url": "https://blog.google/technology/ai/rss/", "name": "Google AI"},
-    {"url": "https://openai.com/blog/rss/", "name": "OpenAI"},
     {"url": "https://www.deepmind.com/blog/rss.xml", "name": "DeepMind"},
-    {"url": "https://stability.ai/blog/rss.xml", "name": "Stability AI"},
-    {"url": "https://www.anthropic.com/news/rss.xml", "name": "Anthropic"},
-    {"url": "https://importai.substack.com/feed", "name": "Import AI"},
     {"url": "https://lastweekin.ai/feed", "name": "Last Week in AI"},
-    {"url": "https://aiweekly.co/issues.rss", "name": "AI Weekly"},
     {"url": "https://www.artificialintelligence-news.com/feed/", "name": "AI News"},
     {"url": "https://syncedreview.com/feed/", "name": "Synced Review"},
     {"url": "https://bdtechtalks.com/feed/", "name": "TechTalks"},
-    {"url": "https://www.unite.ai/feed/", "name": "Unite AI"},
 ]
 
 def summarize_article(title, content):
     msg = client.messages.create(
         model="claude-haiku-4-5-20251001",
-        system="You are a JSON-only response bot. You must always respond with valid JSON and nothing else. Never add explanation or markdown.",
         max_tokens=300,
         messages=[{
             "role": "user",
-            "content": f"""Summarize this AI news article in exactly 2 sentences (max 50 words total).
-Be factual and specific. Include key numbers or metrics if present.
+            "content": f"""You must respond with ONLY a JSON object, no other text.
+
+Summarize this AI news article in 2 sentences max 50 words.
+Give 3 short tags.
 
 Title: {title}
-Content: {content[:1500]}
+Content: {content[:1000]}
 
-Also provide 3 short relevant tags.
-Respond ONLY with valid JSON like this:
-{{"summary": "...", "tags": ["tag1", "tag2", "tag3"]}}"""
+Return ONLY this JSON:
+{{"summary": "your summary here", "tags": ["tag1", "tag2", "tag3"]}}"""
         }]
     )
     raw = msg.content[0].text.strip()
-    print(f"  RAW RESPONSE: {raw[:100]}")
+    print(f"  RAW: [{raw[:150]}]")
     raw = raw.replace("```json", "").replace("```", "").strip()
+    start = raw.find("{")
+    end = raw.rfind("}") + 1
+    if start >= 0 and end > start:
+        raw = raw[start:end]
     return json.loads(raw)
 
 articles = []
@@ -84,9 +81,9 @@ for source in SOURCES:
                     "fetched_at": datetime.now(timezone.utc).isoformat()
                 })
                 print(f"  OK: {title[:60]}")
-                time.sleep(0.5)
+                time.sleep(0.3)
             except Exception as e:
-                print(f"  Summarize error: {e}")
+                print(f"  ERROR: {e}")
                 continue
 
     except Exception as e:
