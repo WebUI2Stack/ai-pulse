@@ -47,7 +47,9 @@ Respond ONLY with valid JSON like this:
 {{"summary": "...", "tags": ["tag1", "tag2", "tag3"]}}"""
         }]
     )
-    return json.loads(msg.content[0].text)
+    raw = msg.content[0].text.strip()
+    raw = raw.replace("```json", "").replace("```", "").strip()
+    return json.loads(raw)
 
 articles = []
 seen_titles = set()
